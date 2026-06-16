@@ -12,34 +12,32 @@ const output = document.getElementById('output');
 input.addEventListener('change', async (e) => {
     if (!e.target.files[0]) return;
     
-    output.innerHTML = "<p class='text-yellow-400 animate-pulse'>Procesando ticket inteligente...</p>";
+    output.innerHTML = "<p class='text-yellow-400 animate-pulse'>Procesando ticket...</p>";
     
     try {
         const worker = await Tesseract.createWorker('spa');
         const { data: { text } } = await worker.recognize(e.target.files[0]);
         await worker.terminate();
-        
-        console.log("Texto extraído:", text); // Debug: Ver el texto real en la consola
 
-        // --- REGEX MEJORADOS (Más flexibles) ---
+        // --- REGEX DEFINITIVOS ---
         
-        // 1. Factura: Busca números tras "Factura No." o "No." (Funciona bien)
-        const facturaMatch = text.match(/Factura No\.\s*(?:\d+\s+)?(\d+)/i) || text.match(/No\.\s*(?:0800|0929)\s+(\d+)/i);
+        // 1. Factura: Busca números de 6 dígitos después de "Factura No."
+        const facturaMatch = text.match(/Factura No\.\s*(?:0800|0929)?\s*(\d{6})/i);
         
-        // 2. SKU: AJUSTE AGRESIVO. Busca cualquier número suelto de 6 dígitos.
-        // He quitado el '\n' para que no sea tan restrictivo.
-        const skuMatch = text.match(/\b(\d{6})\b/);
+        // 2. SKU: Busca la línea que empieza por 6 dígitos, seguida por un espacio y un "1"
+        // Esto ignora el número de factura porque la factura no tiene un "1" inmediatamente después.
+        const skuMatch = text.match(/^\s*(\d{6})\s+1\s+/m);
         
-        // 3. Total: Busca "Total Contado" y el monto (Funciona bien)
+        // 3. Precio: Busca el último monto al final del ticket
         const precioMatch = text.match(/Total Contado\s+([\d,]+\.\d{2})/i);
         
-        // 4. Vendedor: Busca "Vend:" seguido de números (Funciona bien)
+        // 4. Vendedor: Busca "Vend:" seguido de números
         const vendedorMatch = text.match(/Vend[:\.]?\s*(\d+)/i);
 
         const datosVenta = {
             tipo: text.includes('0800') ? 'Virtual' : 'Física',
             factura: facturaMatch ? facturaMatch[1] : 'N/A',
-            sku: skuMatch ? skuMatch[1] : 'N/A', // Captura el SKU
+            sku: skuMatch ? skuMatch[1] : 'N/A',
             vendedor: vendedorMatch ? vendedorMatch[1] : 'N/A',
             precio: precioMatch ? parseFloat(precioMatch[1].replace(/,/g, '')) : 0
         };
@@ -68,7 +66,7 @@ function guardarVenta(datos) {
     let ventas = JSON.parse(localStorage.getItem('ventas') || '[]');
     ventas.push(datos);
     localStorage.setItem('ventas', JSON.stringify(ventas));
-    alert('¡Venta registrada!');
+    alert('¡Venta registrada con éxito!');
     output.innerHTML = "";
     input.value = "";
 }
