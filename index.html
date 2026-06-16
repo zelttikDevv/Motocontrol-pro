@@ -5,20 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MotoControl Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-950 text-white min-h-screen">
-    
-    <main class="max-w-md mx-auto p-6">
-        <h1 class="text-3xl font-bold text-center mb-8">MotoControl Pro</h1>
-        
+<body class="bg-slate-950 text-white min-h-screen p-4">
+
+    <nav class="flex justify-center gap-4 mb-8">
+        <button onclick="show('captura')" class="px-6 py-2 bg-blue-600 rounded-xl font-bold">📸 Capturar</button>
+        <button onclick="show('dashboard')" class="px-6 py-2 bg-slate-800 rounded-xl font-bold">📊 Dashboard</button>
+    </nav>
+
+    <main id="captura-view" class="max-w-md mx-auto">
         <div class="bg-slate-900 p-6 rounded-2xl border border-slate-700">
-            <input type="file" id="ticketInput" class="block w-full mb-4">
+            <input type="file" id="ticketInput" class="block w-full text-sm mb-4">
             <div id="output" class="text-sm"></div>
         </div>
     </main>
 
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <main id="dashboard-view" class="max-w-md mx-auto hidden">
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-slate-800 p-4 rounded-xl text-center">
+                <h3 class="text-slate-400 text-xs uppercase">Ventas</h3>
+                <p id="total-ventas" class="text-2xl font-bold">0</p>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-xl text-center">
+                <h3 class="text-slate-400 text-xs uppercase">Total $</h3>
+                <p id="total-dinero" class="text-2xl font-bold">$0</p>
+            </div>
+        </div>
+        <canvas id="miGrafica"></canvas>
+    </main>
+
     <script src="app.js"></script>
 </body>
 </html>
