@@ -12,38 +12,46 @@ const output = document.getElementById('output');
 input.addEventListener('change', async (e) => {
     if (!e.target.files[0]) return;
     
-    output.innerHTML = "<p class='text-yellow-400 animate-pulse'>Iniciando motor de lectura, espera unos segundos...</p>";
+    output.innerHTML = "<p class='text-yellow-400 animate-pulse'>Procesando ticket inteligente...</p>";
     
     try {
-        // Inicializar el worker de Tesseract
         const worker = await Tesseract.createWorker('spa');
         output.innerText = "Analizando imagen...";
         
         const { data: { text } } = await worker.recognize(e.target.files[0]);
         await worker.terminate();
         
-        // Lógica de Extracción Coppel
-        const esVirtual = text.includes('0800');
-        const facturaMatch = text.match(/(?:0800|0929)\s+(\d{5})/);
-        const precioMatch = text.match(/Total Contado\s+([\d,]+\.\d{2})/);
-        const skuMatch = text.match(/(\d{6})\s+1/);
+        // --- REGEX MEJORADOS ---
+        // 1. Factura: Captura números tras "Factura No." o "No."
+        const facturaMatch = text.match(/Factura No\.\s*(?:\d+\s+)?(\d+)/i) || text.match(/No\.\s*(?:0800|0929)\s+(\d+)/i);
+        
+        // 2. SKU: Busca números de 6 dígitos al inicio de una línea
+        const skuMatch = text.match(/\n\s*(\d{6})\s+/);
+        
+        // 3. Precio: Busca "Total Contado" y el monto
+        const precioMatch = text.match(/Total Contado\s+([\d,]+\.\d{2})/i);
+        
+        // 4. Vendedor: Busca "Vend:" seguido de números
+        const vendedorMatch = text.match(/Vend[:\.]?\s*(\d+)/i);
 
         const datosVenta = {
-            tipo: esVirtual ? 'Virtual' : 'Física',
+            tipo: text.includes('0800') ? 'Virtual' : 'Física',
             factura: facturaMatch ? facturaMatch[1] : 'N/A',
-            precio: precioMatch ? parseFloat(precioMatch[1].replace(/,/g, '')) : 0,
-            sku: skuMatch ? skuMatch[1] : 'N/A'
+            sku: skuMatch ? skuMatch[1] : 'N/A',
+            vendedor: vendedorMatch ? vendedorMatch[1] : 'N/A',
+            precio: precioMatch ? parseFloat(precioMatch[1].replace(/,/g, '')) : 0
         };
 
         output.innerHTML = `
-            <div class="space-y-3 mt-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
-                <h3 class="font-bold text-lg">Ticket Detectado:</h3>
+            <div class="space-y-2 mt-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
+                <h3 class="font-bold text-lg mb-2">Datos Detectados:</h3>
                 <p><strong>Tienda:</strong> ${datosVenta.tipo}</p>
                 <p><strong>Factura:</strong> ${datosVenta.factura}</p>
                 <p><strong>SKU:</strong> ${datosVenta.sku}</p>
+                <p><strong>Vendedor:</strong> ${datosVenta.vendedor}</p>
                 <p><strong>Total:</strong> $${datosVenta.precio.toLocaleString()}</p>
                 <button onclick='guardarVenta(${JSON.stringify(datosVenta)})' 
-                        class="w-full bg-green-600 hover:bg-green-500 font-bold py-2 rounded-lg">
+                        class="w-full bg-green-600 hover:bg-green-500 py-2 rounded-lg font-bold mt-2">
                     Confirmar y Guardar
                 </button>
             </div>
@@ -59,7 +67,6 @@ function guardarVenta(datos) {
     ventas.push(datos);
     localStorage.setItem('ventas', JSON.stringify(ventas));
     alert('¡Venta registrada con éxito!');
-    // Limpiar campos
     output.innerHTML = "";
     input.value = "";
 }
@@ -70,10 +77,7 @@ function renderizarDashboard() {
     document.getElementById('total-ventas').innerText = ventas.length;
     document.getElementById('total-dinero').innerText = '$' + ventas.reduce((a, b) => a + b.precio, 0).toLocaleString();
     
-    // Configuración de Gráfica
     const ctx = document.getElementById('miGrafica').getContext('2d');
-    
-    // Si ya existe una gráfica, destruirla antes de crear otra
     if (window.miGraficaInstancia) window.miGraficaInstancia.destroy();
     
     window.miGraficaInstancia = new Chart(ctx, {
