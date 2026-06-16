@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Estilos extra para que se vea profesional */
-body {
-  font-family: 'Inter', sans-serif;
+@layer base {
+  body {
+    @apply bg-slate-950 text-white antialiased font-sans;
+  }
 }
