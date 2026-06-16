@@ -1,15 +1,9 @@
-import './globals.css'; // Necesitaremos importar los estilos de Tailwind
+import './globals.css';
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body className="bg-slate-950 text-slate-50 antialiased">
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
